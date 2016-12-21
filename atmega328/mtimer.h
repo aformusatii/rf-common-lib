@@ -8,12 +8,13 @@ Includes
 /********************************************************************************
 	Macros and Defines
 ********************************************************************************/
-#define _to_uint64(x,y) ((uint64_t) x << 16) | y
+#define TIMER1_PRESCALER 256
+#define CYCLES_PER_SECOND F_CPU/TIMER1_PRESCALER
 
 /********************************************************************************
 Function Prototypes
 ********************************************************************************/
-void initTimer();
+void initTimer1();
 void incrementOvf();
 uint64_t convertSecondsToCicles(uint16_t value);
 uint64_t getCurrentTimeCicles();

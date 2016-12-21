@@ -62,6 +62,7 @@ private:
   bool dynamic_payloads_enabled; /**< Whether dynamic payloads are enabled. */ 
   uint8_t ack_payload_length; /**< Dynamic size of pending ack payload. */
   uint64_t pipe0_reading_address; /**< Last address set on pipe 0 for reading. */
+  HardwarePlatform *hp;
 
 protected:
 
@@ -197,7 +198,15 @@ public:
    *
    * Creates a new instance of this driver.
    */
-  RF24();
+  RF24(HardwarePlatform *_hp) :
+	  wide_band(true),
+	  p_variant(false),
+	  payload_size(32),
+	  ack_payload_available(false),
+	  dynamic_payloads_enabled(false),
+	  ack_payload_length(0),
+	  pipe0_reading_address(0),
+	  hp(_hp) {}
 
   /**
    * Begin operation of the chip

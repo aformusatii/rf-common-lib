@@ -8,17 +8,22 @@ Includes
 #include <stdio.h>
 #include <stdbool.h>
 #include "../common/util.h"
+#include "../../src/conf.h"
 
 /********************************************************************************
 Macros and Defines
 ********************************************************************************/
-#define BAUD 9600
+// http://wormfood.net/avrbaudcalc.php?bitrate=300%2C600%2C1200%2C2400%2C4800%2C9600%2C14.4k%2C19.2k%2C28.8k%2C38.4k%2C57.6k%2C76.8k%2C115.2k%2C230.4k%2C250k%2C.5m%2C1m&clock=8&databits=8
+#ifndef BAUD
+    #define BAUD 9600
+#define BAUD
+#endif
+
 #define MYUBRR F_CPU/16/BAUD-1
 
 #define CONSOLE_PREFIX "\natmega328>"
 
-#define UART_CMD_RECEIVED  0
-#define UNSUPPORTED_CMD_RECEIVED  1
+#define MAX_CMD_ARGS  10
 
 /********************************************************************************
 Function Prototypes
@@ -32,6 +37,6 @@ int usart_putchar_printf(char var, FILE *stream);
 
 void handle_usart_interrupt();
 void usart_check_loop();
-void handle_usart_cmd(char *cmd, char *arg);
+void handle_usart_cmd(char *cmd, char* args[], uint8_t arg_count);
 
 #endif /* USART_H_ */

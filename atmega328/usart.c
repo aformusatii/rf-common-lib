@@ -14,9 +14,10 @@ Global Variables
 ********************************************************************************/
 static FILE mystdout = FDEV_SETUP_STREAM(usart_putchar_printf, NULL, _FDEV_SETUP_WRITE);
 
-volatile uint8_t usart_reg1_flags = 0;
-volatile uint8_t usart_cmd_buffer[255];
-volatile uint8_t usart_cmd_buffer_count = 0;
+uint8_t usart_cmd_buffer[20];
+uint8_t usart_cmd_buffer_count = 0;
+
+volatile bool receivedCommand = false;
 
 void usart_init() {
     // Set baud rate
@@ -26,8 +27,8 @@ void usart_init() {
     // Enable receiver and transmitter and Interrupt on receive complete
     UCSR0B = (1<<RXEN0)|(1<<TXEN0)|(1<<RXCIE0);
 
-    // Set frame format: 8data, 2stop bit, Odd Parity
-    UCSR0C = (1<<UPM01)|(1<<UPM00)|(1<<USBS0)|(1<<UCSZ01)|(1<<UCSZ00);
+    // Set frame format: Odd Parity, 2 stop bits, 8 data bits
+    UCSR0C = (1<<UPM01)|(1<<UPM00)|(1<<USBS0)|(0<<UCSZ02)|(1<<UCSZ01)|(1<<UCSZ00);
 
     // setup our stdio stream
     stdout = &mystdout;
@@ -78,11 +79,15 @@ void handle_usart_interrupt() {
 
 	switch (usart_data) {
 		case 13:
-			SET_REG1_FLAG(usart_reg1_flags, UART_CMD_RECEIVED);
+			receivedCommand = true;
+			usart_putchar(usart_data);
 			break;
 
 		case 127:
-			SET_REG1_FLAG(usart_reg1_flags, UNSUPPORTED_CMD_RECEIVED);
+			if (usart_cmd_buffer_count > 0) {
+				usart_cmd_buffer_count--;
+				usart_putchar(usart_data);
+			}
 			break;
 
 		default:
@@ -92,25 +97,14 @@ void handle_usart_interrupt() {
 }
 
 void usart_check_loop() {
-
-	/**
-	 * --------> USART Unsupported command received.
-	 */
-	if (GET_REG1_FLAG(usart_reg1_flags, UNSUPPORTED_CMD_RECEIVED)) {
-		printf("<BACKSPACE NOT SUPPORTED>");
-		printf(CONSOLE_PREFIX);
-		usart_cmd_buffer_count = 0;
-		CLR_REG1_FLAG(usart_reg1_flags, UNSUPPORTED_CMD_RECEIVED);
-	}
-
 	/**
 	 * --------> USART Command received.
 	 */
-	if (GET_REG1_FLAG(usart_reg1_flags, UART_CMD_RECEIVED)) {
+	if (receivedCommand) {
 		parse_usart_cmd();
 		printf(CONSOLE_PREFIX);
 		usart_cmd_buffer_count = 0;
-		CLR_REG1_FLAG(usart_reg1_flags, UART_CMD_RECEIVED);
+		receivedCommand = false;
 	}
 }
 
@@ -127,17 +121,19 @@ void parse_usart_cmd() {
 		pch = strtok((char *) sub_usart_cmd_buffer, " ");
 
 		char* cmd = NULL;
-		char* cmd_args = NULL;
+		char* cmd_args[MAX_CMD_ARGS];
+		uint8_t cmd_arg_count = 0;
 
 		if (pch != NULL) {
 			cmd = pch;
 		}
 
 		pch = strtok(NULL, " ");
-		if (pch != NULL) {
-			cmd_args = pch;
+		while (pch != NULL && (cmd_arg_count < MAX_CMD_ARGS)) {
+			cmd_args[cmd_arg_count++] = pch;
+			pch = strtok(NULL, " ");
 		}
 
-		handle_usart_cmd(cmd, cmd_args);
+		handle_usart_cmd(cmd, cmd_args, cmd_arg_count);
 	}
 }

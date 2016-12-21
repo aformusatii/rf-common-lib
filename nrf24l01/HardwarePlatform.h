@@ -12,20 +12,35 @@
 /* ============================================== */
 //#define IF_SERIAL_DEBUG(x) x
 #define IF_SERIAL_DEBUG(x)
+#define IF_WRITE_DEBUG(x)
 #define printf_P printf
-#define strlen_P strlen
-#define PRIPSTR "%s"
-#define PSTR(x) x
 
 /* ============================================== */
 class HardwarePlatform {
+
+private:
+	volatile uint8_t * direction_register;
+	volatile uint8_t * out_register;
+	volatile uint8_t csn_pin;
+	volatile uint8_t ce_pin;
+
 public:
+	HardwarePlatform(volatile uint8_t * direction_r,
+			         volatile uint8_t * out_r,
+					 uint8_t csn_p,
+					 uint8_t ce_p) :
+						 direction_register(direction_r),
+						 out_register(out_r),
+						 csn_pin(csn_p),
+						 ce_pin(ce_p) {
+	}
+
 	void initIO();
+	void initSPI();
 	void csn(uint8_t value);
 	void ce(uint8_t value);
-	void initSPI();
 	uint8_t spiTransfer(uint8_t tx_);
 	void delayMicroseconds(uint64_t micros);
 	void delayMilliseconds(uint64_t milisec);
-};
 
+};
